@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { join } from 'path';
+import { randomUUID } from 'crypto';
 import { DATA_DIR } from '../config.js';
 
 const db = new Database(join(DATA_DIR, 'users.db'));
@@ -82,7 +83,7 @@ export function createUser(id, email) {
 // ── Sessions ──────────────────────────────────────────────────────────────────
 
 export function createSession(userId) {
-  const id = crypto.randomUUID();
+  const id = randomUUID();
   const now = new Date();
   const expires = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
   db.prepare('INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')

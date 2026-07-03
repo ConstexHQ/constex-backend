@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import {
   saveOtp, consumeOtp, findUserByEmail, createUser,
   createSession, validateSession, deleteSession, seedUserWatchlist,
@@ -73,7 +74,7 @@ router.post('/verify-otp', (req, res) => {
   let user = findUserByEmail(email.toLowerCase());
   let isNew = false;
   if (!user) {
-    user = createUser(crypto.randomUUID(), email.toLowerCase());
+    user = createUser(randomUUID(), email.toLowerCase());
     isNew = true;
     seedUserWatchlist(user.id, DEFAULT_WATCHLIST);
   }
