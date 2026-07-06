@@ -3,6 +3,10 @@ import { fetchMarket } from '../data/market.js';
 
 const router = Router();
 
+let _cache = null;
+let _cacheAt = 0;
+const CACHE_TTL = 5 * 60 * 1000;
+
 const SECTOR_ETFS = [
   { name: 'Technology',    etf: 'XLK'  },
   { name: 'Energy',        etf: 'XLE'  },
@@ -31,6 +35,10 @@ const MACRO_TICKERS = [
 
 router.get('/', async (req, res) => {
   try {
+    if (_cache && (Date.now() - _cacheAt) < CACHE_TTL) {
+      return res.json(_cache);
+    }
+
     const [macroResults, sectorResults] = await Promise.all([
       Promise.allSettled(MACRO_TICKERS.map(({ key, ticker, label }) =>
         fetchMarket(ticker).then(m => ({ key, label, price: m.price, changePct: m.changePct }))
@@ -62,7 +70,12 @@ router.get('/', async (req, res) => {
       }
     }
 
-    res.json({ macro, sectors, fred_available: false, fetchedAt: new Date().toISOString() });
+    const result = { macro, sectors, fred_available: false, fetchedAt: new Date().toISOString() };
+    if (Object.keys(macro).length > 0) {
+      _cache = result;
+      _cacheAt = Date.now();
+    }
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
