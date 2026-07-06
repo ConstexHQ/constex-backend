@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { fetchMarket } from '../data/market.js';
+import { fetchFinnhubQuotes } from '../data/finnhub.js';
 
 const router = Router();
 
@@ -22,16 +22,37 @@ const SECTOR_ETFS = [
 ];
 
 const MACRO_TICKERS = [
-  { key: 'SP500',  ticker: 'SPY',    label: 'S&P 500' },
-  { key: 'NASDAQ', ticker: 'QQQ',    label: 'NASDAQ'  },
-  { key: 'DJI',    ticker: 'DIA',    label: 'DOW'     },
-  { key: 'VIX',    ticker: '^VIX',   label: 'VIX'     },
-  { key: 'BTC',    ticker: 'BTC-USD',label: 'BTC'     },
-  { key: 'GOLD',   ticker: 'GLD',    label: 'GOLD'    },
-  { key: 'OIL',    ticker: 'USO',    label: 'OIL'     },
-  { key: 'BONDS',  ticker: 'TLT',    label: '20Y BOND'},
-  { key: 'DXY',    ticker: 'UUP',    label: 'USD'     },
+  { key: 'SP500',  ticker: 'SPY',  label: 'S&P 500'  },
+  { key: 'NASDAQ', ticker: 'QQQ',  label: 'NASDAQ'   },
+  { key: 'DJI',    ticker: 'DIA',  label: 'DOW'      },
+  { key: 'VIX',    ticker: '^VIX', label: 'VIX'      },
+  { key: 'GOLD',   ticker: 'GLD',  label: 'GOLD'     },
+  { key: 'OIL',    ticker: 'USO',  label: 'OIL'      },
+  { key: 'BONDS',  ticker: 'TLT',  label: '20Y BOND' },
+  { key: 'DXY',    ticker: 'UUP',  label: 'USD'      },
 ];
+
+const YF_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'application/json',
+};
+
+async function fetchBTC() {
+  try {
+    const url = 'https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?interval=1d&range=5d&includePrePost=false';
+    const r = await fetch(url, { headers: YF_HEADERS });
+    if (!r.ok) return null;
+    const d = await r.json();
+    const meta = d?.chart?.result?.[0]?.meta;
+    if (!meta) return null;
+    const price = meta.regularMarketPrice ?? null;
+    const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? null;
+    const changePct = (price && prevClose && prevClose !== 0)
+      ? +((((price - prevClose) / prevClose) * 100).toFixed(2))
+      : null;
+    return { price, changePct };
+  } catch { return null; }
+}
 
 router.get('/', async (req, res) => {
   try {
@@ -39,35 +60,29 @@ router.get('/', async (req, res) => {
       return res.json(_cache);
     }
 
-    const [macroResults, sectorResults] = await Promise.all([
-      Promise.allSettled(MACRO_TICKERS.map(({ key, ticker, label }) =>
-        fetchMarket(ticker).then(m => ({ key, label, price: m.price, changePct: m.changePct }))
-      )),
-      Promise.allSettled(SECTOR_ETFS.map(({ name, etf }) =>
-        fetchMarket(etf).then(m => ({ name, etf, perf_5d: m.changePct, price: m.price }))
-      )),
+    const allFinnhubTickers = [
+      ...MACRO_TICKERS.map(t => t.ticker),
+      ...SECTOR_ETFS.map(s => s.etf),
+    ];
+
+    const [fhQuotes, btc] = await Promise.all([
+      fetchFinnhubQuotes(allFinnhubTickers),
+      fetchBTC(),
     ]);
 
     const macro = {};
-    for (const r of macroResults) {
-      if (r.status === 'fulfilled') {
-        macro[r.value.key] = {
-          label:      r.value.label,
-          price:      r.value.price,
-          change_pct: r.value.changePct,
-        };
-      }
+    for (const { key, ticker, label } of MACRO_TICKERS) {
+      const q = fhQuotes[ticker];
+      if (q) macro[key] = { label, price: q.price, change_pct: q.changePct };
+    }
+    if (btc?.price != null) {
+      macro['BTC'] = { label: 'BTC', price: btc.price, change_pct: btc.changePct };
     }
 
     const sectors = {};
-    for (const r of sectorResults) {
-      if (r.status === 'fulfilled') {
-        sectors[r.value.name] = {
-          etf:     r.value.etf,
-          perf_5d: r.value.perf_5d,
-          price:   r.value.price,
-        };
-      }
+    for (const { name, etf } of SECTOR_ETFS) {
+      const q = fhQuotes[etf];
+      if (q) sectors[name] = { etf, perf_5d: q.changePct, price: q.price };
     }
 
     const result = { macro, sectors, fred_available: false, fetchedAt: new Date().toISOString() };
