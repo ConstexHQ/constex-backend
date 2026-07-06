@@ -2,17 +2,28 @@ import { Router } from 'express';
 import { fetchMarket } from '../data/market.js';
 import { fetchFinnhubQuote, fetchFinnhubQuotes } from '../data/finnhub.js';
 import { getWatchlist } from '../data/watchlist.js';
+import { validateSession, getUserWatchlist } from '../db/index.js';
 
 const router = Router();
 
-async function fetchAll() {
-  const watchlist = getWatchlist();
+function resolveWatchlist(req) {
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) {
+    const session = validateSession(auth.slice(7));
+    if (session) {
+      const list = getUserWatchlist(session.user_id);
+      if (list.length > 0) return list;
+    }
+  }
+  return getWatchlist();
+}
+
+async function fetchAll(watchlist) {
   return Promise.allSettled(
     watchlist.map(async item => {
       const [market] = await Promise.allSettled([fetchMarket(item.ticker)]);
       const m = market.status === 'fulfilled' ? market.value : {};
 
-      // Override price with real-time Finnhub quote for stocks/ETFs
       if (item.type !== 'crypto') {
         const q = await fetchFinnhubQuote(item.ticker);
         if (q) {
@@ -50,7 +61,8 @@ function transformPosition(item, m) {
 
 router.get('/', async (req, res) => {
   try {
-    const results = await fetchAll();
+    const watchlist = resolveWatchlist(req);
+    const results = await fetchAll(watchlist);
     const positions = results.map(r => {
       if (r.status !== 'fulfilled') return { error: 'fetch failed' };
       const { item, market } = r.value;
@@ -62,10 +74,9 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Fast prices endpoint — Finnhub for stocks, Yahoo for crypto
 router.get('/prices', async (req, res) => {
   try {
-    const watchlist = getWatchlist();
+    const watchlist = resolveWatchlist(req);
     const stocks  = watchlist.filter(w => w.type !== 'crypto');
     const cryptos = watchlist.filter(w => w.type === 'crypto');
 
@@ -75,12 +86,10 @@ router.get('/prices', async (req, res) => {
     ]);
 
     const prices = [
-      // Real-time stock/ETF prices from Finnhub
       ...stocks.map(w => {
         const q = fhQuotes[w.ticker];
         return { ticker: w.ticker, display: w.display, price: q?.price ?? null, change_pct: q?.changePct ?? null };
       }),
-      // Crypto from Yahoo (essentially real-time)
       ...cryptoResults.map(r => {
         if (r.status !== 'fulfilled') return null;
         const { w, m } = r.value;
