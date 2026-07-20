@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { fetchMarket } from '../data/market.js';
 import { fetchFinnhubQuote, fetchFinnhubQuotes } from '../data/finnhub.js';
+import { fetchCryptoPrices } from '../data/crypto.js';
 import { getWatchlist } from '../data/watchlist.js';
 import { validateSession, getUserWatchlist } from '../db/index.js';
 
@@ -80,9 +81,9 @@ router.get('/prices', async (req, res) => {
     const stocks  = watchlist.filter(w => w.type !== 'crypto');
     const cryptos = watchlist.filter(w => w.type === 'crypto');
 
-    const [fhQuotes, cryptoResults] = await Promise.all([
+    const [fhQuotes, cgPrices] = await Promise.all([
       fetchFinnhubQuotes(stocks.map(w => w.ticker)),
-      Promise.allSettled(cryptos.map(w => fetchMarket(w.ticker).then(m => ({ w, m })))),
+      fetchCryptoPrices(cryptos.map(w => w.ticker)),
     ]);
 
     const prices = [
@@ -90,11 +91,10 @@ router.get('/prices', async (req, res) => {
         const q = fhQuotes[w.ticker];
         return { ticker: w.ticker, display: w.display, price: q?.price ?? null, change_pct: q?.changePct ?? null };
       }),
-      ...cryptoResults.map(r => {
-        if (r.status !== 'fulfilled') return null;
-        const { w, m } = r.value;
-        return { ticker: w.ticker, display: w.display, price: m.price, change_pct: m.changePct };
-      }).filter(Boolean),
+      ...cryptos.map(w => {
+        const q = cgPrices[w.ticker];
+        return { ticker: w.ticker, display: w.display, price: q?.price ?? null, change_pct: q?.changePct ?? null };
+      }),
     ];
 
     res.json({ prices });

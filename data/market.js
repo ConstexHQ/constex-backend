@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import { fetchCryptoPrice } from './crypto.js';
 
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -137,11 +138,11 @@ export async function fetchMarket(ticker) {
   const isCrypto = ticker.endsWith('-USD');
 
   const [chart1d, chart1y, searchRes, optRes, fvData] = await Promise.allSettled([
-    timed('yf:chart1d',  () => yfChart(ticker, '1d', '5d')),
-    timed('yf:chart1y',  () => yfChart(ticker, '1mo', '1y')),
-    timed('yf:search',   () => yfSearch(ticker)),
+    timed('yf:chart1d',  () => withTimeout(4000, yfChart(ticker, '1d', '5d'))),
+    timed('yf:chart1y',  () => withTimeout(4000, yfChart(ticker, '1mo', '1y'))),
+    timed('yf:search',   () => withTimeout(3000, yfSearch(ticker))),
     timed('yf:options',  () => isCrypto ? Promise.resolve(null) : withTimeout(3000, yfOptions(ticker))),
-    timed('yf:finviz',   () => isCrypto ? Promise.resolve({}) : fetchFinvizFull(ticker)),
+    timed('yf:finviz',   () => isCrypto ? Promise.resolve({}) : withTimeout(5000, fetchFinvizFull(ticker))),
   ]);
 
   const get = r => r.status === 'fulfilled' ? r.value : null;
@@ -152,11 +153,17 @@ export async function fetchMarket(ticker) {
   const fv      = get(fvData) || {};
 
   const meta = chart?.meta || {};
-  const price = fv.price ?? meta.regularMarketPrice ?? null;
-  const prevClose = meta.chartPreviousClose ?? meta.previousClose ?? null;
-  const changePct = (price && prevClose && prevClose !== 0)
+  let price = fv.price ?? meta.regularMarketPrice ?? null;
+  let prevClose = meta.chartPreviousClose ?? meta.previousClose ?? null;
+  let changePct = (price && prevClose && prevClose !== 0)
     ? +((((price - prevClose) / prevClose) * 100).toFixed(2))
     : null;
+
+  // Override with CoinGecko for crypto — Yahoo Finance data is unreliable for crypto
+  if (isCrypto) {
+    const cg = await fetchCryptoPrice(ticker).catch(() => null);
+    if (cg) { price = cg.price; changePct = cg.changePct; }
+  }
 
   let sparkline = [];
   try {

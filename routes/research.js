@@ -137,7 +137,7 @@ router.get('/:ticker/stream', requireAuth, async (req, res) => {
     const stP     = fetchStockTwits(ticker).catch(() => ({ available: false }));
     const fvP     = fetchFinviz(ticker).catch(() => ({}));
 
-    const market = await marketP;
+    const market = await Promise.race([marketP, new Promise(r => setTimeout(() => r({}), 5000))]);
     send({ type: 'data', payload: transformAgg({ ticker, isCrypto, fetchedAt, market,
       newsApi: { available: false }, alphavantage: { available: false },
       stocktwits: { available: false }, finviz: {} }) });
