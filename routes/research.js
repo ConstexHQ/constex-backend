@@ -142,7 +142,13 @@ router.get('/:ticker/stream', requireAuth, async (req, res) => {
       newsApi: { available: false }, alphavantage: { available: false },
       stocktwits: { available: false }, finviz: {} }) });
 
-    const [newsApi, alphavantage, stocktwits, finviz] = await Promise.all([newsP, avP, stP, fvP]);
+    const timeout = (ms, fallback) => new Promise(r => setTimeout(() => r(fallback), ms));
+    const [newsApi, alphavantage, stocktwits, finviz] = await Promise.all([
+      Promise.race([newsP, timeout(4000, { available: false })]),
+      Promise.race([avP,   timeout(4000, { available: false })]),
+      Promise.race([stP,   timeout(3000, { available: false })]),
+      Promise.race([fvP,   timeout(3000, {})]),
+    ]);
     const agg = { ticker, isCrypto, fetchedAt, market, newsApi, alphavantage, stocktwits, finviz };
     send({ type: 'data', payload: transformAgg(agg) });
 
