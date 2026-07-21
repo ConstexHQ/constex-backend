@@ -7,58 +7,37 @@ DATE: {date}
 DATA:
 {data}
 
-Write a complete 17-section report in Markdown. Each section starts with ## SECTION NAME. Use tables where helpful. Cite specific numbers.
+Write a concise 10-section report in Markdown. Each section starts with ## SECTION NAME. Be direct, cite specific numbers, no filler.
 
 ## EXECUTIVE SUMMARY
-3-4 paragraphs. BULLISH / BEARISH / NEUTRAL stance. Core thesis plainly stated.
+2-3 paragraphs. BULLISH / BEARISH / NEUTRAL stance. Core thesis plainly stated.
 
 ## PRICE ACTION & TECHNICALS
-Current price, 52W range, YTD performance, RSI, MACD, Bollinger Bands, moving averages, key levels.
+Current price, 52W range, YTD performance, RSI, key moving averages, key levels.
 
 ## BUSINESS OVERVIEW
-What the company does, competitive moat, market position, revenue model, TAM.
+What the company does, competitive moat, revenue model, TAM. 1-2 paragraphs.
 
 ## FINANCIAL PERFORMANCE
-Revenue trend, margin trajectory, EPS growth, FCF generation.
-
-## BALANCE SHEET HEALTH
-Debt vs cash, net debt position, current ratio, refinancing risk.
+Revenue trend, margins, EPS growth, FCF. Key numbers only.
 
 ## VALUATION ANALYSIS
-P/E, EV/EBITDA, P/S vs sector norms. Expensive, fair, or cheap? What does the market need to believe?
+P/E, EV/EBITDA, P/S vs sector norms. Expensive, fair, or cheap?
 
 ## ANALYST & WALL STREET CONSENSUS
-Rating distribution, price target range, recent upgrades/downgrades, implied upside.
-
-## INSTITUTIONAL POSITIONING
-Major holders, 13F changes, concentration risk, smart money signals.
-
-## INSIDER ACTIVITY
-Recent buys/sells, significance vs holdings, what it signals.
-
-## OPTIONS INTELLIGENCE & SHORT INTEREST
-Put/call ratio, max pain, short % float, days to cover, squeeze potential.
-
-## NEWS & NARRATIVE ANALYSIS
-Dominant narrative, sentiment trend, key catalysts in recent news.
-
-## SOCIAL SENTIMENT & RETAIL POSITIONING
-StockTwits bull/bear ratio, Reddit mood, retail positioning.
+Rating distribution, price target range, implied upside.
 
 ## RISK FACTORS
-5-7 specific, serious risks. Company-specific, sector, macro, regulatory.
+4-5 specific risks. Company-specific, sector, macro.
 
 ## BULL CASE
-3 strongest arguments for owning. Specific price targets and catalysts.
+3 strongest arguments for owning with specific catalysts.
 
 ## BEAR CASE
-3 strongest arguments against. Specific downside scenarios and levels.
-
-## UPCOMING CATALYSTS
-Earnings date, product launches, regulatory events, macro events.
+3 strongest arguments against with specific downside levels.
 
 ## VERDICT
-Final stance. Suggested positioning. Your own price target. Time horizon. The one thing the investor must know.
+Final stance. Your price target. Time horizon. The one thing the investor must know.
 
 Write the full report now. Be specific and direct.`;
 

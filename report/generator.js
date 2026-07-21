@@ -143,7 +143,7 @@ function buildPrompt(agg) {
 export async function generateReport(agg) {
   const msg = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 4096,
     messages: [{ role: 'user', content: buildPrompt(agg) }],
   });
   return msg.content[0].text;
@@ -152,7 +152,7 @@ export async function generateReport(agg) {
 export async function generateReportStream(agg, onSection) {
   const stream = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 8192,
+    max_tokens: 4096,
     messages: [{ role: 'user', content: buildPrompt(agg) }],
     stream: true,
   });
