@@ -9,9 +9,9 @@ RUN npm ci --production
 
 COPY . .
 
-ENV PORT=8080
-ENV DATA_DIR=/data
+ENV PORT=10000
+ENV DATA_DIR=/tmp/constex-data
 
-EXPOSE 8080
+EXPOSE 10000
 
 CMD ["node", "server.js"]
