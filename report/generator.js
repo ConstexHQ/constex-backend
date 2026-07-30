@@ -2,7 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ANTHROPIC_KEY } from '../config.js';
 import { REPORT_PROMPT, CRYPTO_NOTE } from './prompts.js';
 
-const client = new Anthropic({ apiKey: ANTHROPIC_KEY });
+let _client = null;
+const client = { messages: { create: (...a) => { if (!_client) _client = new Anthropic({ apiKey: ANTHROPIC_KEY }); return _client.messages.create(...a); } } };
 
 function pct(v) { return v != null ? (v * 100).toFixed(1) + '%' : 'N/A'; }
 function bil(v) { return v != null ? '$' + (v / 1e9).toFixed(2) + 'B' : 'N/A'; }

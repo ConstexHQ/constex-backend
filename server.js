@@ -1,3 +1,5 @@
+process.on('uncaughtException', (err) => { console.error('[CRASH]', err.message, err.stack); process.exit(1); });
+process.on('unhandledRejection', (err) => { console.error('[REJECT]', err); });
 import express from 'express';
 import cors from 'cors';
 import cron from 'node-cron';
